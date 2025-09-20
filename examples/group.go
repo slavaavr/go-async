@@ -9,37 +9,37 @@ import (
 )
 
 func main() {
-	v, err := runHeavyTasks(context.Background())
+	v, err := runTasks(context.Background())
 	if err != nil {
-		time.Sleep(3 * time.Second)
+		println("got expected error:", err.Error())
 		return
 	}
 
 	println(v)
 }
 
-func runHeavyTasks(ctx context.Context) (string, error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+func runTasks(ctx context.Context) (string, error) {
+	group, ctx := async.NewGroup(ctx)
+	defer group.Close()
 
-	t1 := async.Submit(func() (string, error) {
+	t1 := async.Submit(group, func() (string, error) {
 		println("task 1")
 		return "A", nil
 	})
 
-	t2 := async.Submit(func() (string, error) {
+	t2 := async.Submit(group, func() (string, error) {
 		println("task 2")
 		return "", errors.New("some error")
 	})
 
-	t3 := async.Submit(func() (string, error) {
+	t3 := async.Submit(group, func() (string, error) {
 		select {
 		case <-ctx.Done():
 			println("ctx closed in task 3")
 			return "", ctx.Err()
 
 		case <-time.After(1 * time.Second):
-			println("timeout in task 3")
+			println("task 3")
 		}
 
 		return "C", nil

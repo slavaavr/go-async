@@ -15,7 +15,15 @@ $ go get -u github.com/slavaavr/go-async
 ```go 
 import "github.com/slavaavr/go-async"
 
-task := async.Submit(func() (string, error) {
+group, ctx := async.NewGroup(ctx)
+defer group.Close()
+
+task := async.Submit(group, func() (string, error) {
+    select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+    }
 	return "hello World", nil
 })
 
@@ -30,7 +38,15 @@ println(v)
 ```go
 import "github.com/slavaavr/go-async"
 
-task := async.SubmitAction(func() error {
+group, ctx := async.NewGroup(ctx)
+defer group.Close()
+
+task := async.SubmitAction(group, func() error {
+    select {
+    case <-ctx.Done():
+        return "", ctx.Err()
+    default:
+    }
 	println("doing work without a response...")
 	return nil
 })
@@ -41,8 +57,8 @@ if err := task.Await(); err != nil {
 ```
 
 ### Notes
-- To prevent `goroutine leaks`, use `context` with `cancel/timeout` whenever possible ([example](https://github.com/slavaavr/go-async/tree/main/examples/ctx.go))
-- For more usage cases, see the [examples](https://github.com/slavaavr/go-async/tree/main/examples) folder
+- The `Group` entity ensures that all tasks are properly waited on, preventing `goroutine leaks` even if one task returns an `error` and stops further execution.
+- For more use cases, see the [examples](https://github.com/slavaavr/go-async/tree/main/examples) folder.
 
 [ci-badge]:      https://github.com/slavaavr/go-async/actions/workflows/main.yaml/badge.svg
 [ci-runs]:       https://github.com/slavaavr/go-async/actions

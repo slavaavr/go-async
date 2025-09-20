@@ -1,6 +1,7 @@
 package async
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -89,7 +90,8 @@ func TestTask_Await(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
-			task := Submit(c.task)
+			g, _ := NewGroup(context.Background())
+			task := Submit(g, c.task)
 			wg := &sync.WaitGroup{}
 
 			for i := 0; i < 5; i++ {
@@ -119,10 +121,13 @@ func TestTask_Pipeline(t *testing.T) {
 		{
 			name: "simple pipeline",
 			task: func() ([]int, error) {
-				t1 := Submit(func() ([]int, error) {
+				g, _ := NewGroup(context.Background())
+				defer g.Close()
+
+				t1 := Submit(g, func() ([]int, error) {
 					return []int{1}, nil
 				})
-				t2 := Submit(func() ([]int, error) {
+				t2 := Submit(g, func() ([]int, error) {
 					v, err := t1.Await()
 					if err != nil {
 						return nil, err
@@ -130,7 +135,7 @@ func TestTask_Pipeline(t *testing.T) {
 
 					return append(v, 2), nil
 				})
-				t3 := Submit(func() ([]int, error) {
+				t3 := Submit(g, func() ([]int, error) {
 					v, err := t2.Await()
 					if err != nil {
 						return nil, err
@@ -138,7 +143,7 @@ func TestTask_Pipeline(t *testing.T) {
 
 					return append(v, 3), nil
 				})
-				t4 := Submit(func() ([]int, error) {
+				t4 := Submit(g, func() ([]int, error) {
 					v, err := t3.Await()
 					if err != nil {
 						return nil, err
@@ -146,7 +151,7 @@ func TestTask_Pipeline(t *testing.T) {
 
 					return append(v, 4), nil
 				})
-				t5 := Submit(func() ([]int, error) {
+				t5 := Submit(g, func() ([]int, error) {
 					v, err := t4.Await()
 					if err != nil {
 						return nil, err
@@ -163,10 +168,13 @@ func TestTask_Pipeline(t *testing.T) {
 		{
 			name: "pipeline with a shared task",
 			task: func() ([]int, error) {
-				t1 := Submit(func() ([]int, error) {
+				g, _ := NewGroup(context.Background())
+				defer g.Close()
+
+				t1 := Submit(g, func() ([]int, error) {
 					return []int{1}, nil
 				})
-				t2 := Submit(func() ([]int, error) {
+				t2 := Submit(g, func() ([]int, error) {
 					v, err := t1.Await()
 					if err != nil {
 						return nil, err
@@ -174,7 +182,7 @@ func TestTask_Pipeline(t *testing.T) {
 
 					return append(v, 2), nil
 				})
-				t3 := Submit(func() ([]int, error) {
+				t3 := Submit(g, func() ([]int, error) {
 					v, err := t1.Await()
 					if err != nil {
 						return nil, err
@@ -201,11 +209,14 @@ func TestTask_Pipeline(t *testing.T) {
 		{
 			name: "error in the second task",
 			task: func() ([]int, error) {
-				t1 := Submit(func() ([]int, error) {
+				g, _ := NewGroup(context.Background())
+				defer g.Close()
+
+				t1 := Submit(g, func() ([]int, error) {
 					return []int{1}, nil
 				})
 
-				t2 := Submit(func() ([]int, error) {
+				t2 := Submit(g, func() ([]int, error) {
 					v, err := t1.Await()
 					if err != nil {
 						return nil, err
@@ -213,7 +224,7 @@ func TestTask_Pipeline(t *testing.T) {
 
 					return v, errors.New("error42")
 				})
-				t3 := Submit(func() ([]int, error) {
+				t3 := Submit(g, func() ([]int, error) {
 					v, err := t2.Await()
 					if err != nil {
 						return nil, err
@@ -232,7 +243,9 @@ func TestTask_Pipeline(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
-			task := Submit(c.task)
+			g, _ := NewGroup(context.Background())
+			task := Submit(g, c.task)
+			g.Close()
 			actual, actualErr := task.Await()
 			require.Equal(t, c.expectedErr, actualErr)
 			assert.Equal(t, c.expected, actual)
@@ -266,7 +279,8 @@ func TestActionTask_Await(t *testing.T) {
 		c := c
 
 		t.Run(c.name, func(t *testing.T) {
-			task := SubmitAction(c.task)
+			g, _ := NewGroup(context.Background())
+			task := SubmitAction(g, c.task)
 			wg := &sync.WaitGroup{}
 
 			for i := 0; i < 5; i++ {

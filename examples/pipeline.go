@@ -1,37 +1,43 @@
 package main
 
-import "github.com/slavaavr/go-async"
+import (
+	"context"
+	"fmt"
 
-func main2() {
-	t1 := async.Submit(func() (string, error) {
-		println("t1")
+	"github.com/slavaavr/go-async"
+)
+
+func main() {
+	group, ctx := async.NewGroup(context.Background())
+	_ = ctx
+	defer group.Close()
+
+	t1 := async.Submit(group, func() (string, error) {
 		return "A", nil
 	})
 
-	t2 := async.Submit(func() (string, error) {
+	t2 := async.Submit(group, func() (string, error) {
 		v, err := t1.Await()
 		if err != nil {
 			return "", err
 		}
 
-		println("t2")
 		return v + "B", nil
 	})
 
-	t3 := async.Submit(func() (string, error) {
+	t3 := async.Submit(group, func() (string, error) {
 		v, err := t2.Await()
 		if err != nil {
 			return "", err
 		}
 
-		println("t3")
 		return v + "C", nil
 	})
 
-	v, err := t3.Await()
+	res, err := t3.Await()
 	if err != nil {
 		panic(err)
 	}
 
-	println(v == "ABC")
+	fmt.Printf("expect='%s', actual='%s'\n", "ABC", res)
 }

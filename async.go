@@ -2,61 +2,39 @@ package async
 
 import (
 	"fmt"
-	"sync/atomic"
 )
 
 type Task[T any] struct {
-	out    chan *result[T]
-	result atomic.Pointer[result[T]]
-}
-
-type result[T any] struct {
-	value T
-	err   error
-}
-
-func newResult[T any](value T, err error) *result[T] {
-	return &result[T]{value: value, err: err}
+	done   chan struct{}
+	result T
+	err    error
 }
 
 func Submit[T any](
+	g *Group,
 	f func() (T, error),
 ) *Task[T] {
-	out := make(chan *result[T], 1)
+	g.add()
+	t := &Task[T]{done: make(chan struct{})}
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				var v T
-				out <- newResult(v, fmt.Errorf("panic: %v", r))
+				t.err = fmt.Errorf("panic: %v", r)
 			}
 
-			close(out)
+			close(t.done)
+			g.done()
 		}()
 
-		v, err := f()
-		out <- newResult(v, err)
+		t.result, t.err = f()
 	}()
 
-	return &Task[T]{
-		out:    out,
-		result: atomic.Pointer[result[T]]{},
-	}
+	return t
 }
 
 func (s *Task[T]) Await() (T, error) {
-	r, ok := <-s.out
-	if !ok {
-		for {
-			r = s.result.Load()
-			if r != nil {
-				return r.value, r.err
-			}
-		}
-	}
-
-	s.result.Store(r)
-
-	return r.value, r.err
+	<-s.done
+	return s.result, s.err
 }
 
 type ActionTask struct {
@@ -69,10 +47,11 @@ func (s *ActionTask) Await() error {
 }
 
 func SubmitAction(
+	g *Group,
 	f func() error,
 ) *ActionTask {
 	return &ActionTask{
-		task: Submit(func() (struct{}, error) {
+		task: Submit(g, func() (struct{}, error) {
 			return struct{}{}, f()
 		}),
 	}
