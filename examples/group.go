@@ -8,7 +8,7 @@ import (
 	"github.com/slavaavr/go-async"
 )
 
-func main() {
+func main1() {
 	v, err := runTasks(context.Background())
 	if err != nil {
 		println("got expected error:", err.Error())

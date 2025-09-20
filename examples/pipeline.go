@@ -7,7 +7,7 @@ import (
 	"github.com/slavaavr/go-async"
 )
 
-func main() {
+func main2() {
 	group, ctx := async.NewGroup(context.Background())
 	_ = ctx
 	defer group.Close()
