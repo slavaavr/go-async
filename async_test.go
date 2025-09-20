@@ -245,7 +245,9 @@ func TestTask_Pipeline(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			g, _ := NewGroup(context.Background())
 			task := Submit(g, c.task)
+
 			g.Close()
+
 			actual, actualErr := task.Await()
 			require.Equal(t, c.expectedErr, actualErr)
 			assert.Equal(t, c.expected, actual)

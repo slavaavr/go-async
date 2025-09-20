@@ -10,6 +10,7 @@ type Group struct {
 	cancel func()
 }
 
+// nolint:unparam
 func NewGroup(ctx context.Context) (*Group, context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Group{cancel: cancel}, ctx

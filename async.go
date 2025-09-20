@@ -14,8 +14,10 @@ func Submit[T any](
 	g *Group,
 	f func() (T, error),
 ) *Task[T] {
-	g.add()
 	t := &Task[T]{done: make(chan struct{})}
+
+	g.add()
+
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {

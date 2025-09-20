@@ -54,7 +54,7 @@ if err := task.Await(); err != nil {
 
 ### Notes
 - The `Group` entity ensures that all tasks are properly waited on, preventing `goroutine leaks` even if one task returns an `error` and stops further execution.
-- For more use cases, see the [examples](https://github.com/slavaavr/go-async/tree/main/examples) folder.
+- For more use cases, see the [examples](https://github.com/slavaavr/go-async/tree/main/internal/examples) folder.
 
 [ci-badge]:      https://github.com/slavaavr/go-async/actions/workflows/main.yaml/badge.svg
 [ci-runs]:       https://github.com/slavaavr/go-async/actions
