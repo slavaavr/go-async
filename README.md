@@ -12,10 +12,8 @@ $ go get -u github.com/slavaavr/go-async
 
 ### Quick start
 - Task with a signature `func() (T, error)`
-```go 
-import "github.com/slavaavr/go-async"
-
-group, ctx := async.NewGroup(ctx)
+```go
+group, ctx := async.NewGroup(context.Background())
 defer group.Close()
 
 task := async.Submit(group, func() (string, error) {
@@ -36,18 +34,16 @@ println(v)
 ```
 - Action Task with a signature `func() error`
 ```go
-import "github.com/slavaavr/go-async"
-
-group, ctx := async.NewGroup(ctx)
+group, ctx := async.NewGroup(context.Background())
 defer group.Close()
 
 task := async.SubmitAction(group, func() error {
     select {
     case <-ctx.Done():
-        return "", ctx.Err()
+        return ctx.Err()
     default:
     }
-	println("doing work without a response...")
+	println("executing a task without a response...")
 	return nil
 })
 
